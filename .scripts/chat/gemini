@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Carregar variável de ambiente do .env
+source /home/paiva/.scripts/chat/.env
+
+MODEL="gemini-2.0-flash"
+ENDPOINT="https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$GEMINI_API_KEY"
+
+echo "🌟 Gemini CLI - Modelo: $MODEL (Ctrl+C para sair)"
+echo
+
+while true; do
+  echo -n "Você: "
+  read prompt
+
+  if [[ -z "$prompt" ]]; then
+    echo "⚠️ Prompt vazio. Tente novamente."
+    continue
+  fi
+
+  # Realiza a requisição
+  resposta=$(curl -s "$ENDPOINT" \
+    -H "Content-Type: application/json" \
+    -X POST \
+    -d "{\"contents\":[{\"parts\":[{\"text\":\"$prompt\"}]}]}")
+
+  # Usar o jq para pegar o texto da resposta
+  output=$(echo "$resposta" | jq -r '.candidates[0].content.parts[0].text')
+
+  if [[ -z "$output" ]]; then
+    echo "⚠️ Erro na resposta: $resposta"
+  else
+    echo -e "\n🤖 Gemini:\n$output" | glow -
+  fi
+  echo
+done
+

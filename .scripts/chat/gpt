@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Carrega a chave da OpenAI do .env
+if [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
+else
+  echo "Arquivo .env não encontrado. Crie um com OPENAI_API_KEY=\"sua_chave\""
+  exit 1
+fi
+
+MODEL="gpt-3.5-turbo"  # ou "gpt-4-turbo"
+
+echo "🤖 ChatGPT CLI - Modelo: $MODEL (Ctrl+C para sair)"
+
+while true; do
+  read -p $'\nVocê: ' prompt
+
+  response=$(curl -s https://api.openai.com/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d "{
+      \"model\": \"$MODEL\",
+      \"messages\": [{\"role\": \"user\", \"content\": \"$prompt\"}],
+      \"temperature\": 0.7
+    }")
+
+  # Verifica se veio resposta
+  if echo "$response" | jq -e '.choices[0].message.content' &>/dev/null; then
+    echo -e "\n🤖 ChatGPT:"
+    echo "$response" | jq -r '.choices[0].message.content' | glow -
+  else
+    echo -e "\n⚠️ Erro na resposta:"
+    echo "$response" | jq
+  fi
+done
+
